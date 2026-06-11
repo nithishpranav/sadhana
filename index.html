@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0F141E">
+<meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Sādhanā">
@@ -15,9 +16,12 @@
   --ink:#0F141E; --panel:#161D2B; --panel2:#131927; --line:#2A3447;
   --text:#E9E4D8; --dim:#8B93A3; --faint:#5A6375;
   --saffron:#E2A23B; --body:#C97B5D; --mind:#7FA08C; --craft:#6E8CB8; --danger:#C96A5D;
+  color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;background:var(--ink);color:var(--text);
+html{height:100%;background:var(--ink)}
+body{margin:0;padding:0;background:var(--ink);color:var(--text);
+  height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
   font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   -webkit-font-smoothing:antialiased}
 .serif{font-family:Georgia,"Times New Roman",serif}
@@ -25,14 +29,16 @@ html,body{margin:0;padding:0;background:var(--ink);color:var(--text);
 button{background:none;border:none;color:inherit;font:inherit;padding:0;cursor:pointer;text-align:left}
 input,textarea{background:transparent;border:none;color:var(--text);font:inherit;width:100%;outline:none;resize:none;padding:0}
 input::placeholder,textarea::placeholder{color:var(--faint)}
-header{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:baseline;
-  padding:.7rem 1.25rem;border-bottom:1px solid var(--line);
-  background:rgba(15,20,30,.93);backdrop-filter:blur(8px)}
+header{flex:none;display:flex;justify-content:space-between;align-items:baseline;
+  padding:.7rem 1.25rem;padding-top:calc(.7rem + env(safe-area-inset-top));
+  border-bottom:1px solid var(--line);background:var(--ink)}
+														  
 #banner{display:none;background:var(--panel2);border-bottom:1px solid var(--danger);
-  padding:.6rem 1.25rem;font-size:.72rem;color:var(--dim)}
-main{max-width:42rem;margin:0 auto;padding:1.5rem 1.25rem 7.5rem}
-nav{position:fixed;bottom:0;left:0;right:0;z-index:20;border-top:1px solid var(--line);
-  background:rgba(15,20,30,.96);backdrop-filter:blur(8px);
+  padding:.6rem 1.25rem;font-size:.72rem;color:var(--dim);flex:none}
+main{flex:1 1 0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:1.5rem max(1.25rem,calc((100% - 42rem)/2)) 3rem}
+nav{flex:none;border-top:1px solid var(--line);background:var(--ink);
+														  
   padding-bottom:env(safe-area-inset-bottom)}
 .navin{max-width:42rem;margin:0 auto;display:flex}
 .navbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.2rem;
@@ -111,7 +117,8 @@ article{margin-top:1rem}
 #drawer{position:fixed;inset:0;z-index:30;display:none;overflow-y:auto}
 #drawer.open{display:block}
 .dhead{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:baseline;
-  padding:.75rem 1.25rem;border-bottom:1px solid;backdrop-filter:blur(8px)}
+  padding:.75rem 1.25rem;padding-top:calc(.75rem + env(safe-area-inset-top));
+  border-bottom:1px solid;backdrop-filter:blur(8px)}
 .dbody{max-width:42rem;margin:0 auto;width:100%;padding:1.25rem 1.25rem 4rem}
 .btn2{font-family:ui-monospace,Menlo,monospace;font-size:.68rem;padding:.35rem .8rem;
   border-radius:4px;font-weight:600;flex-shrink:0}
@@ -210,9 +217,9 @@ window.FIREBASE_CONFIG = {
 var LS="sadhana";
 var STAGES=["Not started","Studied","Derived myself","Can explain it"];
 var DOMAINS=[
-  {id:"body",name:"Body",color:"var(--body)",ck:"#C97B5D",hint:"e.g., Push day — bench 4×8. Hit 130g protein."},
-  {id:"mind",name:"Mind",color:"var(--mind)",ck:"#7FA08C",hint:"e.g., 10-minute sit before the evening log."},
-  {id:"craft",name:"Craft",color:"var(--craft)",ck:"#6E8CB8",hint:"e.g., Derive the GBM update rule by hand, then check it."}
+  {id:"body",name:"Body",color:"var(--body)",ck:"#C97B5D",hint:"Add a rep — e.g., Push day: bench 4×8"},
+  {id:"mind",name:"Mind",color:"var(--mind)",ck:"#7FA08C",hint:"Add a rep — e.g., 10-minute sit"},
+  {id:"craft",name:"Craft",color:"var(--craft)",ck:"#6E8CB8",hint:"Add a rep — e.g., derive GBM update by hand"}
 ];
 var TRACKS=[{id:"lc",name:"LeetCode",short:"LC"},{id:"py",name:"Python",short:"Py"},{id:"sql",name:"SQL",short:"SQL"}];
 var DIFFS=[{id:"E",c:"var(--mind)"},{id:"M",c:"var(--saffron)"},{id:"H",c:"var(--body)"}];
@@ -319,6 +326,8 @@ if(!S.weeks)S.weeks={};
 if(!S.mastery)S.mastery={items:[]};
 if(!S.roadmap)S.roadmap=seedState().roadmap;
 if(!S.settings.createdAt)S.settings.createdAt=dKey(new Date());
+if(!S.pins)S.pins={body:[{id:uid(),text:"Protein 130–140g"}],mind:[],craft:[]};
+["body","mind","craft"].forEach(function(d){if(!S.pins[d])S.pins[d]=[]});
 
 var ind=document.getElementById("ind");
 // ————— cloud sync state (engine attaches at bottom) —————
@@ -378,20 +387,45 @@ function saveAux(k,obj){
 function fdDay(k){if(!FD.days[k])FD.days[k]={items:[],water:0};var d=FD.days[k];if(!d.items)d.items=[];if(typeof d.water!=="number")d.water=0;return d}
 
 // ————— entry helpers —————
-function emptyEntry(){return{reps:{body:{text:"",done:false,ref:null},mind:{text:"",done:false,ref:null},craft:{text:"",done:false,ref:null}},log:{did:"",prediction:"",reflection:""},problems:[],weekly:""}}
+function emptyEntry(){return{reps:{body:[],mind:[],craft:[]},log:{did:"",prediction:"",reflection:""},problems:[],weekly:""}}
+function freshToday(){
+  var e=emptyEntry();
+  ["body","mind","craft"].forEach(function(d){
+    (S.pins&&S.pins[d]?S.pins[d]:[]).forEach(function(p){
+      e.reps[d].push({id:uid(),text:p.text,done:false,ref:null,pinId:p.id});
+    });
+  });
+  return e;
+}
+function normReps(e){
+  ["body","mind","craft"].forEach(function(d){
+    var r=e.reps?e.reps[d]:null;
+    if(Array.isArray(r)){
+      e.reps[d]=r.map(function(it){return Object.assign({id:uid(),text:"",done:false,ref:null,pinId:null},it)});
+    }else if(r&&typeof r==="object"&&((r.text&&r.text.trim())||r.done)){
+      e.reps[d]=[{id:uid(),text:r.text||"",done:!!r.done,ref:r.ref||null,pinId:null}];
+    }else{
+      e.reps[d]=[];
+    }
+  });
+}
 function getEntry(k){
   var e=S.entries[k];if(!e)return null;
-  var base=emptyEntry();
-  e.reps=Object.assign(base.reps,e.reps||{});
-  ["body","mind","craft"].forEach(function(d){e.reps[d]=Object.assign({text:"",done:false,ref:null},e.reps[d])});
-  e.log=Object.assign(base.log,e.log||{});
+  if(!e.reps)e.reps={body:[],mind:[],craft:[]};
+  normReps(e);
+																												 
+  e.log=Object.assign({did:"",prediction:"",reflection:""},e.log||{});
   e.problems=e.problems||[];
   return e;
 }
-function ensureToday(){var k=dKey(new Date());if(!S.entries[k])S.entries[k]=emptyEntry();return getEntry(k)}
+function ensureToday(){var k=dKey(new Date());if(!S.entries[k])S.entries[k]=freshToday();return getEntry(k)}
 function entryCounts(e){
   if(!e)return false;
-  var rep=e.reps&&Object.keys(e.reps).some(function(d){return e.reps[d]&&e.reps[d].done});
+  var rep=e.reps&&Object.keys(e.reps).some(function(d){
+    var arr=e.reps[d];
+    if(Array.isArray(arr))return arr.some(function(r){return r.done});
+    return arr&&arr.done;
+  });
   var log=e.log&&((e.log.did||"").trim()||(e.log.reflection||"").trim());
   var pr=e.problems&&e.problems.length>0;
   return !!(rep||log||pr);
@@ -418,7 +452,7 @@ function cbHtml(done,color,ck,act,data,small){
 
 function renderToday(){
   var today=new Date(),tk=dKey(today);
-  var e=getEntry(tk)||emptyEntry();
+  var e=getEntry(tk)||freshToday();
   var ch=chainCalc();
   var h='';
   // date + strip
@@ -443,17 +477,29 @@ function renderToday(){
     +(UI.compassOpen?'<p class="serif sm" style="white-space:pre-line;line-height:1.6;margin:.8rem 0 0">'+esc(S.settings.compass)+'</p>':'')
     +'</div>';
   // reps
-  h+='<section><div class="label">Today\'s reps — pick from goals, or write</div><div class="sp8" style="margin-top:.8rem">';
+  h+='<section><div class="label">Today\'s reps — daily actions only</div><div class="sp8" style="margin-top:.8rem">';
   DOMAINS.forEach(function(d){
-    var r=e.reps[d.id];
-    h+='<div class="card" style="border-color:'+(r.done?d.color:'var(--line)')+'"><div class="row">'
-      +cbHtml(r.done,d.color,d.ck,'rep-done','data-dom="'+d.id+'"')
-      +'<div class="flex1"><div class="between" style="margin-bottom:.25rem">'
-      +'<span class="label" style="color:'+d.color+'">'+d.name+(r.ref?'<span class="faint"> · from goals</span>':'')+'</span>'
+    var reps=e.reps[d.id]||[];
+    var doneN=reps.filter(function(r){return r.done}).length;
+    var allDone=reps.length>0&&doneN===reps.length;
+    h+='<div class="card" style="border-color:'+(allDone?d.color:'var(--line)')+'">'
+																   
+      +'<div class="between" style="margin-bottom:.35rem">'
+      +'<span class="label" style="color:'+d.color+'">'+d.name
+      +(reps.length?'<span class="faint"> · '+doneN+'/'+reps.length+'</span>':'')+'</span>'
       +'<button class="mono xs" data-act="pick" data-dom="'+d.id+'" style="color:'+(UI.pickerFor===d.id?d.color:'var(--faint)')+'">⌄ pick</button>'
-      +'</div>'
-      +'<textarea class="grow'+(r.done?' strike':'')+'" rows="1" data-bind="reptext:'+d.id+'" placeholder="'+esc(d.hint)+'">'+esc(r.text)+'</textarea>'
-      +'</div></div>';
+      +'</div>';
+    reps.forEach(function(r){
+      h+='<div class="row" style="margin-top:.45rem">'
+        +cbHtml(r.done,d.color,d.ck,'rep-done','data-dom="'+d.id+'" data-id="'+r.id+'"',true)
+        +'<textarea class="grow flex1'+(r.done?' strike':'')+'" rows="1" data-bind="reptext:'+d.id+':'+r.id+'" placeholder="What, today?">'+esc(r.text)+'</textarea>'
+        +'<button class="mono xs" data-act="rep-pin" data-dom="'+d.id+'" data-id="'+r.id+'" style="flex-shrink:0;margin-top:.2rem;color:'+(r.pinId?'var(--saffron)':'var(--faint)')+';opacity:'+(r.pinId?'1':'.55')+'">daily</button>'
+        +'<button class="x" data-act="rep-del" data-dom="'+d.id+'" data-id="'+r.id+'">✕</button>'
+        +'</div>';
+    });
+    h+='<div style="display:flex;align-items:center;gap:.6rem;margin-top:.55rem">'
+      +'<input class="sm uline flex1 repnew" data-dom="'+d.id+'" placeholder="'+esc(d.hint)+'">'
+      +'<button class="mono xs" style="color:'+d.color+'" data-act="rep-add" data-dom="'+d.id+'">add</button></div>';
     if(UI.pickerFor===d.id){
       var opts=pickOptions(d.id);
       h+='<div class="picklist">';
@@ -499,6 +545,9 @@ function renderToday(){
     +logField("Predicted vs. happened","prediction",e.log.prediction,"What did you expect, and what did reality do? The gap is the lesson.")
     +logField("One clear sentence","reflection",e.log.reflection,"Your communication rep. One sentence, written well.")
     +'</div></section>';
+  // day report
+  h+='<section><button class="card mono xs" style="width:100%;display:flex;align-items:center;gap:.5rem" data-act="report">'
+    +'<span class="saf">⧉</span> Copy today\'s report — feed it to your LLM</button></section>';
   return h;
 }
 function logField(label,f,v,ph){
@@ -519,7 +568,10 @@ function renderWeek(){
   var repC={body:0,mind:0,craft:0},probC={lc:0,py:0,sql:0},kept=0;
   var states=days.map(function(k){
     var e=getEntry(k),ik=entryCounts(e);if(ik)kept++;
-    if(e&&e.reps)Object.keys(e.reps).forEach(function(d){if(e.reps[d].done&&repC[d]!==undefined)repC[d]++});
+    if(e&&e.reps)Object.keys(e.reps).forEach(function(d){
+      var arr=e.reps[d];
+      if(Array.isArray(arr)&&repC[d]!==undefined)repC[d]+=arr.filter(function(r){return r.done}).length;
+    });
     if(e)(e.problems||[]).forEach(function(p){if(probC[p.track]!==undefined)probC[p.track]++});
     return{key:k,kept:ik,future:k>tk};
   });
@@ -558,6 +610,8 @@ function renderWeek(){
     +'<div class="card" style="margin-top:.8rem;border-color:var(--saffron)">'
     +'<textarea class="grow" rows="4" data-bind="review" placeholder="One paragraph. Read the week above first, then write.">'+esc(review)+'</textarea>'
     +'</div></section>';
+  h+='<section><button class="card mono xs" style="width:100%;display:flex;align-items:center;gap:.5rem" data-act="wreport">'
+    +'<span class="saf">⧉</span> Copy week\'s report — every daily record + totals + review</button></section>';
   if(past.length){
     h+='<section><div class="label">Past reviews</div><div class="sp8" style="margin-top:.8rem">';
     past.forEach(function(k){
@@ -668,12 +722,13 @@ function renderJournal(){
   keys.forEach(function(k){
     var e=getEntry(k);
     h+='<article class="card sp6" style="'+(e.weekly?'border-color:var(--saffron)':'')+'">'
-      +'<div class="between"><span class="label" style="color:var(--dim)">'+jDate(k)+'</span><span style="display:flex;gap:.35rem">';
+      +'<div class="between"><span class="label" style="color:var(--dim)">'+jDate(k)+'</span>'
+      +'<span style="display:flex;align-items:center;gap:.7rem"><span style="display:flex;gap:.35rem">';
     DOMAINS.forEach(function(d){
-      var on=e.reps&&e.reps[d.id]&&e.reps[d.id].done;
+      var on=e.reps&&Array.isArray(e.reps[d.id])&&e.reps[d.id].some(function(r){return r.done});
       h+='<span class="dot" title="'+d.name+'" style="background:'+(on?d.color:'transparent')+';border:1px solid '+(on?d.color:'var(--line)')+'"></span>';
     });
-    h+='</span></div>';
+    h+='</span><button class="mono xs faint" title="copy this day\'s report" data-act="jreport" data-k="'+k+'">⧉</button></span></div>';
     if((e.problems||[]).length){
       h+='<div style="display:flex;flex-wrap:wrap;gap:.2rem .8rem">';
       e.problems.forEach(function(p){
@@ -729,7 +784,13 @@ function renderCompass(){
   h+='<section><div class="label">The record</div><div class="sp8" style="margin-top:.6rem">'
     +'<button class="card mono xs" style="display:flex;align-items:center;gap:.5rem;width:100%" data-act="export"><span class="saf">↓</span> Export everything as JSON</button>'
     +'<button class="card mono xs" style="display:flex;align-items:center;gap:.5rem;width:100%" data-act="import"><span class="saf">↑</span> Import from a JSON export</button>'
-    +'<p class="mono xs faint" style="line-height:1.6;margin:0">Keeping since '+esc(S.settings.createdAt)+'. Data lives in this browser\'s local storage on this device. To sync devices: export here, import there. Export monthly as backup.</p>'
+    +'<p class="mono xs faint" style="line-height:1.6;margin:0">Keeping since '+esc(S.settings.createdAt)+'. '
+    +(SYNC.user
+      ?'Synced in real time to your Firebase account across all signed-in devices; this browser\'s local storage is just the offline cache.'
+      :SYNC.configured
+        ?'Sign in above to sync across devices — until then, data lives in this browser only.'
+        :'Data lives in this browser\'s local storage on this device. To sync devices: export here, import there.')
+    +' Export monthly as an extra backup.</p>'
     +'</div></section>';
   return h;
 }
@@ -760,7 +821,7 @@ function render(){
     return '<button class="navbtn'+(UI.tab===t.id?' on':'')+'" data-tab="'+t.id+'"><span class="g">'+t.g+'</span><span class="mono xs">'+t.label+'</span></button>';
   }).join("");
   fitAll();
-  window.scrollTo(0,0);
+  main.scrollTop=0;
 }
 
 // ————— events —————
@@ -774,7 +835,17 @@ main.addEventListener("input",function(e){
   if(t.classList&&t.classList.contains("grow"))fit(t);
   if(!bind)return;
   var p=bind.split(":"),v=t.value;
-  if(p[0]==="reptext"){var en=ensureToday();en.reps[p[1]].text=v;en.reps[p[1]].ref=null}
+  if(p[0]==="reptext"){
+    var en=ensureToday();
+    var rr=(en.reps[p[1]]||[]).find(function(x){return x.id===p[2]});
+    if(rr){
+      rr.text=v;
+      if(rr.pinId&&S.pins[p[1]]){
+        var pn=S.pins[p[1]].find(function(x){return x.id===rr.pinId});
+        if(pn)pn.text=v;
+      }
+    }
+  }
   else if(p[0]==="log"){var en2=ensureToday();en2.log[p[1]]=v}
   else if(p[0]==="review"){var wk=dKey(mondayOf(new Date()));if(!S.weeks[wk])S.weeks[wk]={};S.weeks[wk].review=v}
   else if(p[0]==="settings"){S.settings[p[1]]=v}
@@ -790,6 +861,7 @@ main.addEventListener("keydown",function(e){
   if(t.id==="pname"||t.id==="ptopic"){e.preventDefault();addProblem()}
   else if(t.id==="mnew"){e.preventDefault();addMastery()}
   else if(t.id==="sy_pass"){e.preventDefault();var sb=main.querySelector('[data-act="sy-in"]');if(sb)sb.click()}
+  else if(t.classList&&t.classList.contains("repnew")){e.preventDefault();addRep(t.dataset.dom,t.value);t.value=""}
   else if(t.classList&&t.classList.contains("msnew")){e.preventDefault();addMilestone(t.dataset.dom,t.dataset.phase,t.value);t.value=""}
 });
 
@@ -798,16 +870,41 @@ main.addEventListener("click",function(e){
   var act=b.dataset.act,ds=b.dataset;
   if(act==="compass"){UI.compassOpen=!UI.compassOpen;render()}
   else if(act==="rep-done"){
-    var en=ensureToday(),r=en.reps[ds.dom];r.done=!r.done;
+    var en=ensureToday(),r=(en.reps[ds.dom]||[]).find(function(x){return x.id===ds.id});
+    if(!r)return;
+    r.done=!r.done;
     if(r.ref&&r.ref.type==="milestone")setMilestoneDone(r.ref.id,r.done);
     save();render();
+  }
+  else if(act==="rep-del"){
+    var enD=ensureToday();
+    enD.reps[ds.dom]=(enD.reps[ds.dom]||[]).filter(function(x){return x.id!==ds.id});
+    save();render();
+  }
+  else if(act==="rep-pin"){
+    var enP=ensureToday(),rp=(enP.reps[ds.dom]||[]).find(function(x){return x.id===ds.id});
+    if(!rp)return;
+    if(rp.pinId){
+      S.pins[ds.dom]=(S.pins[ds.dom]||[]).filter(function(x){return x.id!==rp.pinId});
+      rp.pinId=null;
+    }else{
+      if(!(rp.text||"").trim())return;
+      var pid=uid();
+      S.pins[ds.dom].push({id:pid,text:rp.text.trim()});
+      rp.pinId=pid;
+    }
+    save();render();
+  }
+  else if(act==="rep-add"){
+    var inpR=b.parentElement?b.parentElement.querySelector(".repnew"):null;
+    if(inpR){addRep(ds.dom,inpR.value);inpR.value=""}
   }
   else if(act==="pick"){UI.pickerFor=UI.pickerFor===ds.dom?null:ds.dom;render()}
   else if(act==="pickopt"){
     var en3=ensureToday(),label="";
     if(ds.type==="mastery"){var mi=S.mastery.items.find(function(i){return i.id===ds.id});label=mi?mi.title:""}
     else{S.roadmap.domains.forEach(function(d){d.phases.forEach(function(p){p.milestones.forEach(function(m){if(m.id===ds.id)label=m.text})})})}
-    en3.reps[ds.dom].text=label;en3.reps[ds.dom].ref={type:ds.type,id:ds.id};
+    en3.reps[ds.dom].push({id:uid(),text:label,done:false,ref:{type:ds.type,id:ds.id},pinId:null});
     UI.pickerFor=null;save();render();
   }
   else if(act==="ptrack"){UI.pTrack=ds.id;render()}
@@ -858,6 +955,9 @@ main.addEventListener("click",function(e){
       .catch(function(err){if(errEl)errEl.textContent=String((err&&err.code)||err).replace("auth/","").replace(/-/g," ")});
   }
   else if(act==="sy-out"){if(syncImpl)syncImpl.signOut()}
+  else if(act==="report"){copyMd(b,dayReport(dKey(new Date())),"sadhana-report-"+dKey(new Date())+".md")}
+  else if(act==="wreport"){copyMd(b,weekReport(),"sadhana-week-"+dKey(mondayOf(new Date()))+".md")}
+  else if(act==="jreport"){copyMd(b,dayReport(ds.k),"sadhana-report-"+ds.k+".md")}
 });
 
 function addProblem(){
@@ -874,6 +974,13 @@ function addMastery(){
   S.mastery.items.push({id:uid(),title:inp.value.trim(),stage:0,evidence:[]});
   save();render();
 }
+function addRep(dom,text){
+  if(!text||!text.trim())return;
+  var en=ensureToday();
+  en.reps[dom].push({id:uid(),text:text.trim(),done:false,ref:null,pinId:null});
+  save();render();
+  var inp=main.querySelector('.repnew[data-dom="'+dom+'"]');if(inp)inp.focus();
+}
 function addMilestone(dom,phase,text){
   if(!text||!text.trim())return;
   S.roadmap.domains.forEach(function(d){if(d.id!==dom)return;d.phases.forEach(function(p){if(p.id!==phase)return;p.milestones.push({id:uid(),text:text.trim(),done:false})})});
@@ -882,12 +989,104 @@ function addMilestone(dom,phase,text){
 function setMilestoneDone(id,done){
   S.roadmap.domains.forEach(function(d){d.phases.forEach(function(p){p.milestones.forEach(function(m){if(m.id===id)m.done=done})})});
 }
+function dayReport(k){
+  var e=getEntry(k)||freshToday();
+  var ch=chainCalc();
+  var date=new Date(k+"T00:00:00");
+  var L=[];
+  L.push("# Sādhanā — "+k+" ("+date.toLocaleDateString("en-IN",{weekday:"long"})+")");
+  L.push("Chain: "+ch.current+" day"+(ch.current===1?"":"s"));
+  L.push("");
+  L.push("## Reps");
+  DOMAINS.forEach(function(d){
+    var arr=e.reps[d.id]||[];
+    var dn=arr.filter(function(r){return r.done}).length;
+    L.push("### "+d.name+" ("+dn+"/"+arr.length+")");
+    if(arr.length)arr.forEach(function(r){L.push("- ["+(r.done?"x":" ")+"] "+r.text)});
+    else L.push("- (none)");
+  });
+  L.push("");
+  L.push("## Problems solved ("+(e.problems||[]).length+")");
+  if((e.problems||[]).length)e.problems.forEach(function(p){
+    var tr=TRACKS.find(function(t){return t.id===p.track});
+    L.push("- "+(tr?tr.name:p.track)+" · "+p.difficulty+" · "+p.name+(p.topic?" ("+p.topic+")":""));
+  });
+  else L.push("- (none)");
+  L.push("");
+  L.push("## Evening log");
+  L.push("- Did: "+(e.log.did||"—"));
+  L.push("- Predicted vs happened: "+(e.log.prediction||"—"));
+  L.push("- Reflection: "+(e.log.reflection||"—"));
+  var s=fdSums(k),fdd=FD.days[k];
+  L.push("");
+  L.push("## Annam — food & water");
+  L.push("Target "+FD.target+" kcal · consumed "+s.consumed+" · remaining "+(FD.target-s.consumed)+" · water "+s.water+" glass"+(s.water===1?"":"es"));
+  if(fdd&&fdd.items&&fdd.items.length)fdd.items.forEach(function(i){L.push("- "+i.name+" — "+(+i.cal||0)+" kcal")});
+  var brews=CF.brews.filter(function(b){return b.date===k});
+  if(brews.length){
+    L.push("");
+    L.push("## Kāpi — brews");
+    brews.forEach(function(b){
+      var meta=[b.type,b.grind,b.temp,b.equip,b.time].filter(function(x){return x&&x.trim()}).join(", ");
+      L.push("- "+(b.stamp?b.stamp+" · ":"")+(b.brand||"—")+(meta?" ("+meta+")":"")+(b.comm?" — "+b.comm:""));
+    });
+  }
+  return L.join("\n");
+}
+function weekReport(){
+  var today=new Date(),mon=mondayOf(today),wk=dKey(mon),tk=dKey(today);
+  var days=[],kept=0,i;
+  for(i=0;i<7;i++){var k=dKey(addDays(mon,i));days.push(k);if(entryCounts(getEntry(k)))kept++}
+  var L=[];
+  L.push("# Sādhanā — week of "+wk);
+  L.push("Days kept: "+kept+"/7");
+  L.push("");
+  days.forEach(function(k){
+    if(k>tk)return;
+    var hasFood=FD.days[k]&&((FD.days[k].items||[]).length||FD.days[k].water);
+    var hasBrew=CF.brews.some(function(b){return b.date===k});
+    if(!S.entries[k]&&!hasFood&&!hasBrew){
+      L.push("## "+k+" — no entry");L.push("");return;
+    }
+    L.push(dayReport(k).replace(/^## /gm,"### ").replace(/^# /,"## "));
+    L.push("");
+  });
+  var repC={body:0,mind:0,craft:0},probC={lc:0,py:0,sql:0};
+  days.forEach(function(k){
+    var e=getEntry(k);if(!e)return;
+    Object.keys(e.reps).forEach(function(d){
+      var a=e.reps[d];
+      if(Array.isArray(a)&&repC[d]!==undefined)repC[d]+=a.filter(function(r){return r.done}).length;
+    });
+    (e.problems||[]).forEach(function(p){if(probC[p.track]!==undefined)probC[p.track]++});
+  });
+  L.push("## Week totals");
+  L.push("- Reps done: Body "+repC.body+", Mind "+repC.mind+", Craft "+repC.craft);
+  L.push("- Problems: LeetCode "+probC.lc+", Python "+probC.py+", SQL "+probC.sql);
+  var adv=[];
+  S.mastery.items.forEach(function(m){(m.evidence||[]).forEach(function(ev){
+    if(ev.date>=wk&&ev.date<=days[6])adv.push("- "+ev.date+": "+m.title+" → "+STAGES[ev.stage]+(ev.note?" — "+ev.note:""));
+  })});
+  if(adv.length){L.push("");L.push("## Intuition earned this week");adv.forEach(function(a){L.push(a)})}
+  L.push("");
+  L.push("## Review — what compounded, what leaked");
+  L.push((S.weeks[wk]&&S.weeks[wk].review)||"—");
+  return L.join("\n");
+}
+function copyMd(btn,md,fname){
+  var fb=function(){exportBlob(md,fname,"text/markdown");btn.innerHTML='<span class="saf">↓</span> downloaded as .md';setTimeout(render,1800)};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(md).then(
+      function(){btn.innerHTML='<span class="saf">✓</span> copied — paste into your LLM';setTimeout(render,1800)},
+      fb);
+  }else fb();
+}
 function doExport(){
   var data=JSON.stringify(Object.assign({},S,{coffee:CF,food:FD,exportedAt:new Date().toISOString()}),null,2);
   exportBlob(data,"sadhana-"+dKey(new Date())+".json");
 }
-function exportBlob(data,fname){
-  var blob=new Blob([typeof data==="string"?data:JSON.stringify(data,null,2)],{type:"application/json"});
+function exportBlob(data,fname,mime){
+  var blob=new Blob([typeof data==="string"?data:JSON.stringify(data,null,2)],{type:mime||"application/json"});
   var url=URL.createObjectURL(blob);
   var a=document.createElement("a");
   a.href=url;a.download=fname;a.click();
