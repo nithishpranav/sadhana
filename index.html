@@ -21,7 +21,7 @@
 *{box-sizing:border-box}
 html{height:100%;background:var(--ink)}
 body{margin:0;padding:0;background:var(--ink);color:var(--text);
-  height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+  height:100%;display:flex;flex-direction:column;overflow:hidden;
   font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   -webkit-font-smoothing:antialiased}
 .serif{font-family:Georgia,"Times New Roman",serif}
@@ -370,6 +370,7 @@ if(!CF.brews)CF.brews=[];
 var FD=loadAux(LSF,{target:2000,days:{}});
 if(!FD.days)FD.days={};
 if(typeof FD.target!=="number")FD.target=2000;
+if(typeof FD.proteinTarget!=="number")FD.proteinTarget=135;
 
 var auxTimers={};
 function saveAux(k,obj){
@@ -810,6 +811,7 @@ function fit(el){el.style.height="auto";el.style.height=el.scrollHeight+"px"}
 function fitAll(){main.querySelectorAll("textarea.grow").forEach(fit)}
 
 function render(){
+  var st=main.scrollTop;
   var h="";
   if(UI.tab==="today")h=renderToday();
   else if(UI.tab==="week")h=renderWeek();
@@ -821,14 +823,15 @@ function render(){
     return '<button class="navbtn'+(UI.tab===t.id?' on':'')+'" data-tab="'+t.id+'"><span class="g">'+t.g+'</span><span class="mono xs">'+t.label+'</span></button>';
   }).join("");
   fitAll();
-  main.scrollTop=0;
+  main.scrollTop=st;
 }
 
 // ————— events —————
 navEl.addEventListener("click",function(e){
   var b=e.target.closest("[data-tab]");if(!b)return;
-  UI.tab=b.dataset.tab;UI.pickerFor=null;UI.pending=null;render();
+  UI.tab=b.dataset.tab;UI.pickerFor=null;UI.pending=null;render();main.scrollTop=0;
 });
+window.addEventListener("focusout",function(){setTimeout(function(){window.scrollTo(0,0)},60)});
 
 main.addEventListener("input",function(e){
   var t=e.target,bind=t.dataset.bind;
@@ -1020,8 +1023,9 @@ function dayReport(k){
   var s=fdSums(k),fdd=FD.days[k];
   L.push("");
   L.push("## Annam — food & water");
-  L.push("Target "+FD.target+" kcal · consumed "+s.consumed+" · remaining "+(FD.target-s.consumed)+" · water "+s.water+" glass"+(s.water===1?"":"es"));
-  if(fdd&&fdd.items&&fdd.items.length)fdd.items.forEach(function(i){L.push("- "+i.name+" — "+(+i.cal||0)+" kcal")});
+  L.push("Target "+FD.target+" kcal · consumed "+s.consumed+" · remaining "+(FD.target-s.consumed));
+  L.push("Protein: "+s.protein+" / "+FD.proteinTarget+" g · water "+s.water+" glass"+(s.water===1?"":"es"));
+  if(fdd&&fdd.items&&fdd.items.length)fdd.items.forEach(function(i){L.push("- "+i.name+" — "+(+i.cal||0)+" kcal"+((+i.pro||0)?", "+(+i.pro)+"g protein":""))});
   var brews=CF.brews.filter(function(b){return b.date===k});
   if(brews.length){
     L.push("");
@@ -1127,10 +1131,11 @@ var drawer=document.getElementById("drawer");
 
 function renderDrawer(){
   if(!UI.drawer){drawer.className="";drawer.innerHTML="";return}
+  var st=drawer.scrollTop;
   drawer.className="open "+(UI.drawer==="coffee"?"th-coffee":"th-food");
   drawer.innerHTML=UI.drawer==="coffee"?renderCoffee():renderFood();
   drawer.querySelectorAll("textarea.grow").forEach(fit);
-  drawer.scrollTop=0;
+  drawer.scrollTop=st;
 }
 
 function renderCoffee(){
@@ -1184,8 +1189,9 @@ function renderCoffee(){
 
 function fdSums(k){
   var d=FD.days[k];
-  var c=0;if(d&&d.items)d.items.forEach(function(i){c+=(+i.cal||0)});
-  return{consumed:c,water:d?(d.water||0):0};
+  var c=0,p=0;
+  if(d&&d.items)d.items.forEach(function(i){c+=(+i.cal||0);p+=(+i.pro||0)});
+  return{consumed:c,protein:p,water:d?(d.water||0):0};
 }
 
 function renderFood(){
@@ -1209,19 +1215,25 @@ function renderFood(){
     +'<div class="card stat"><div class="bignum '+(over?'over':'acc-f')+'" id="fd_rem">'+rem+'</div><div class="mono xs" style="color:#56705C;margin-top:.25rem">remaining</div></div>'
     +'</div>'
     +'<div class="bar" style="background:#2E4435;margin-top:.75rem"><div id="fd_bar" style="width:'+pct+'%;background:'+(over?'#C97B5D':'#7FB069')+'"></div></div>';
+  var ppct=FD.proteinTarget>0?Math.min(100,Math.round(s.protein/FD.proteinTarget*100)):0;
+  h+='<div class="between" style="margin-top:1rem"><span class="label">Protein</span>'
+    +'<span class="mono xs" style="color:'+(s.protein>=FD.proteinTarget?'#8FBC8F':'#8AA38E')+'"><span id="fd_pcons">'+s.protein+'</span> / '
+    +'<input data-dbind="fd-ptarget" type="number" inputmode="numeric" value="'+FD.proteinTarget+'" style="width:3.4rem;text-align:right;display:inline;color:#DFE9DA;font-family:inherit;font-size:inherit"> g</span></div>'
+    +'<div class="bar" style="background:#2E4435;margin-top:.45rem"><div id="fd_pbar" style="width:'+ppct+'%;background:#8FBC8F"></div></div>';
   // add food
   h+='<div class="card sp8" style="margin-top:1.25rem">'
     +'<div class="label">Add food / drink</div>'
     +'<div style="display:flex;align-items:center;gap:.6rem">'
     +'<input id="fd_name" class="sm uline" placeholder="What — e.g., curd rice, whey shake" style="flex:2">'
-    +'<input id="fd_cal" class="sm uline" type="number" inputmode="numeric" placeholder="kcal" style="flex:.7;min-width:4rem">'
+    +'<input id="fd_cal" class="sm uline" type="number" inputmode="numeric" placeholder="kcal" style="flex:.55;min-width:3.2rem">'
+    +'<input id="fd_pro" class="sm uline" type="number" inputmode="numeric" placeholder="prot g" style="flex:.55;min-width:3.2rem">'
     +'<button class="btn2 btn-f" data-dact="fd-add">+ add</button></div>';
   if(d.items.length>0){
     h+='<div class="sp4" style="padding-top:.2rem">';
     d.items.forEach(function(i){
       h+='<div style="display:flex;align-items:center;gap:.6rem">'
         +'<span class="sm" style="flex:1">'+esc(i.name)+'</span>'
-        +'<span class="mono xs" style="color:#8AA38E">'+(+i.cal||0)+' kcal</span>'
+        +'<span class="mono xs" style="color:#8AA38E">'+(+i.cal||0)+' kcal'+((+i.pro||0)?' · '+(+i.pro)+'g':'')+'</span>'
         +'<button class="x" data-dact="fd-del" data-id="'+i.id+'">✕</button></div>';
     });
     h+='</div>';
@@ -1248,7 +1260,7 @@ function renderFood(){
     h+='<div class="between">'
       +'<span class="mono xs" style="color:#56705C">'+(j===0?'today':shortDate(k))+'</span>'
       +'<span class="mono xs" style="color:'+(has?(ss.consumed>FD.target?'#C97B5D':'#8FBC8F'):'#3E5246')+'">'
-      +(has?ss.consumed+' / '+FD.target+' kcal · '+ss.water+'💧':'—')
+      +(has?ss.consumed+' / '+FD.target+' kcal · '+ss.protein+'g · '+ss.water+'💧':'—')
       +'</span></div>';
   }
   h+='</div></section></div>';
@@ -1263,10 +1275,14 @@ function updateFoodSummary(){
   if(ec)ec.textContent=s.consumed;
   if(er){er.textContent=rem;er.className="bignum "+(over?"over":"acc-f")}
   if(eb){eb.style.width=pct+"%";eb.style.background=over?"#C97B5D":"#7FB069"}
+  var pc=document.getElementById("fd_pcons"),pb=document.getElementById("fd_pbar");
+  var ppct2=FD.proteinTarget>0?Math.min(100,Math.round(s.protein/FD.proteinTarget*100)):0;
+  if(pc)pc.textContent=s.protein;
+  if(pb)pb.style.width=ppct2+"%";
 }
 
-document.getElementById("edgeCoffee").addEventListener("click",function(){UI.drawer="coffee";renderDrawer()});
-document.getElementById("edgeFood").addEventListener("click",function(){UI.drawer="food";renderDrawer()});
+document.getElementById("edgeCoffee").addEventListener("click",function(){UI.drawer="coffee";renderDrawer();drawer.scrollTop=0});
+document.getElementById("edgeFood").addEventListener("click",function(){UI.drawer="food";renderDrawer();drawer.scrollTop=0});
 
 drawer.addEventListener("click",function(e){
   var b=e.target.closest("[data-dact]");if(!b)return;
@@ -1290,9 +1306,9 @@ drawer.addEventListener("click",function(e){
   }
   else if(a==="cf-export"){exportBlob(Object.assign({},CF,{exportedAt:new Date().toISOString()}),"kapi-"+dKey(new Date())+".json")}
   else if(a==="fd-add"){
-    var n=document.getElementById("fd_name"),c=document.getElementById("fd_cal");
+    var n=document.getElementById("fd_name"),c=document.getElementById("fd_cal"),pr=document.getElementById("fd_pro");
     if(!n||!n.value.trim())return;
-    fdDay(dKey(new Date())).items.push({id:uid(),name:n.value.trim(),cal:parseInt(c&&c.value?c.value:"0",10)||0});
+    fdDay(dKey(new Date())).items.push({id:uid(),name:n.value.trim(),cal:parseInt(c&&c.value?c.value:"0",10)||0,pro:parseInt(pr&&pr.value?pr.value:"0",10)||0});
     saveAux(LSF,FD);renderDrawer();
     var n2=document.getElementById("fd_name");if(n2)n2.focus();
   }
@@ -1320,13 +1336,19 @@ drawer.addEventListener("input",function(e){
     saveAux(LSF,FD);
     updateFoodSummary();
   }
+  if(t.dataset.dbind==="fd-ptarget"){
+    var pv=parseInt(t.value,10);
+    FD.proteinTarget=isNaN(pv)||pv<0?0:pv;
+    saveAux(LSF,FD);
+    updateFoodSummary();
+  }
 });
 
 drawer.addEventListener("keydown",function(e){
   if(e.key==="Escape"){UI.drawer=null;renderDrawer();return}
   if(e.key!=="Enter")return;
   var t=e.target;
-  if(t.id==="fd_name"||t.id==="fd_cal"){e.preventDefault();var ab=drawer.querySelector('[data-dact="fd-add"]');if(ab)ab.click()}
+  if(t.id==="fd_name"||t.id==="fd_cal"||t.id==="fd_pro"){e.preventDefault();var ab=drawer.querySelector('[data-dact="fd-add"]');if(ab)ab.click()}
 });
 
 render();
