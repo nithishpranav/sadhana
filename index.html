@@ -32,13 +32,13 @@ input::placeholder,textarea::placeholder{color:var(--faint)}
 header{flex:none;display:flex;justify-content:space-between;align-items:baseline;
   padding:.7rem 1.25rem;padding-top:calc(.7rem + env(safe-area-inset-top));
   border-bottom:1px solid var(--line);background:var(--ink)}
-																																																																				 
+																														 
 #banner{display:none;background:var(--panel2);border-bottom:1px solid var(--danger);
   padding:.6rem 1.25rem;font-size:.72rem;color:var(--dim);flex:none}
 main{flex:1 1 0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:1.5rem max(1.25rem,calc((100% - 42rem)/2)) 3rem}
 nav{flex:none;border-top:1px solid var(--line);background:var(--ink);
-																																																																				 
+																														 
   padding-bottom:env(safe-area-inset-bottom)}
 .navin{max-width:42rem;margin:0 auto;display:flex}
 .navbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.2rem;
@@ -415,7 +415,7 @@ function getEntry(k){
   var e=S.entries[k];if(!e)return null;
   if(!e.reps)e.reps={body:[],mind:[],craft:[]};
   normReps(e);
-																																																																																																																									   
+																																										 
   e.log=Object.assign({did:"",prediction:"",reflection:""},e.log||{});
   e.problems=e.problems||[];
   return e;
@@ -485,7 +485,7 @@ function renderToday(){
     var doneN=reps.filter(function(r){return r.done}).length;
     var allDone=reps.length>0&&doneN===reps.length;
     h+='<div class="card" style="border-color:'+(allDone?d.color:'var(--line)')+'">'
-																																																														  
+																							  
       +'<div class="between" style="margin-bottom:.35rem">'
       +'<span class="label" style="color:'+d.color+'">'+d.name
       +(reps.length?'<span class="faint"> · '+doneN+'/'+reps.length+'</span>':'')+'</span>'
@@ -1287,11 +1287,19 @@ function renderFood(){
   for(var j=0;j<7;j++){
     var k=dKey(addDays(new Date(),-j));
     var ss=fdSums(k);
-    var has=FD.days[k]&&((FD.days[k].items||[]).length||FD.days[k].water);
+    var has=FD.days[k]&&((FD.days[k].items||[]).length||FD.days[k].water||FD.days[k].burned);
+    var burned=(FD.days[k]&&FD.days[k].burned)||0;
+    var deficit=burned?(FD.bmr+burned-ss.consumed):null;
     h+='<div class="between">'
       +'<span class="mono xs" style="color:#56705C">'+(j===0?'today':shortDate(k))+'</span>'
       +'<span class="mono xs" style="color:'+(has?(ss.consumed>FD.target?'#C97B5D':'#8FBC8F'):'#3E5246')+'">'
-      +(has?ss.consumed+' / '+FD.target+' kcal · '+ss.protein+'g · '+ss.water+'💧':'—')
+      +(has
+        ?ss.consumed+' / '+FD.target+' kcal'
+          +(ss.protein?' · '+ss.protein+'g':'')
+          +(burned?' · 🔥'+burned:'')
+          +(deficit!=null?' · '+(deficit>0?deficit+'↓':(-deficit)+'↑'):'')
+          +' · '+ss.water+'💧'
+        :'—')
       +'</span></div>';
   }
   h+='</div></section></div>';
