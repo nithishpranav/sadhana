@@ -32,13 +32,13 @@ input::placeholder,textarea::placeholder{color:var(--faint)}
 header{flex:none;display:flex;justify-content:space-between;align-items:baseline;
   padding:.7rem 1.25rem;padding-top:calc(.7rem + env(safe-area-inset-top));
   border-bottom:1px solid var(--line);background:var(--ink)}
-														  
+																																																																				 
 #banner{display:none;background:var(--panel2);border-bottom:1px solid var(--danger);
   padding:.6rem 1.25rem;font-size:.72rem;color:var(--dim);flex:none}
 main{flex:1 1 0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:1.5rem max(1.25rem,calc((100% - 42rem)/2)) 3rem}
 nav{flex:none;border-top:1px solid var(--line);background:var(--ink);
-														  
+																																																																				 
   padding-bottom:env(safe-area-inset-bottom)}
 .navin{max-width:42rem;margin:0 auto;display:flex}
 .navbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.2rem;
@@ -371,6 +371,7 @@ var FD=loadAux(LSF,{target:2000,days:{}});
 if(!FD.days)FD.days={};
 if(typeof FD.target!=="number")FD.target=2000;
 if(typeof FD.proteinTarget!=="number")FD.proteinTarget=135;
+if(typeof FD.bmr!=="number")FD.bmr=1700;
 
 var auxTimers={};
 function saveAux(k,obj){
@@ -385,7 +386,7 @@ function saveAux(k,obj){
     syncPush(k===LSC?"coffee":"food");
   },400);
 }
-function fdDay(k){if(!FD.days[k])FD.days[k]={items:[],water:0};var d=FD.days[k];if(!d.items)d.items=[];if(typeof d.water!=="number")d.water=0;return d}
+function fdDay(k){if(!FD.days[k])FD.days[k]={items:[],water:0};var d=FD.days[k];if(!d.items)d.items=[];if(typeof d.water!=="number")d.water=0;if(typeof d.burned!=="number")d.burned=0;if(!d.workouts)d.workouts=[];return d}
 
 // ————— entry helpers —————
 function emptyEntry(){return{reps:{body:[],mind:[],craft:[]},log:{did:"",prediction:"",reflection:""},problems:[],weekly:""}}
@@ -414,7 +415,7 @@ function getEntry(k){
   var e=S.entries[k];if(!e)return null;
   if(!e.reps)e.reps={body:[],mind:[],craft:[]};
   normReps(e);
-																												 
+																																																																																																																									   
   e.log=Object.assign({did:"",prediction:"",reflection:""},e.log||{});
   e.problems=e.problems||[];
   return e;
@@ -484,7 +485,7 @@ function renderToday(){
     var doneN=reps.filter(function(r){return r.done}).length;
     var allDone=reps.length>0&&doneN===reps.length;
     h+='<div class="card" style="border-color:'+(allDone?d.color:'var(--line)')+'">'
-																   
+																																																														  
       +'<div class="between" style="margin-bottom:.35rem">'
       +'<span class="label" style="color:'+d.color+'">'+d.name
       +(reps.length?'<span class="faint"> · '+doneN+'/'+reps.length+'</span>':'')+'</span>'
@@ -1025,6 +1026,9 @@ function dayReport(k){
   L.push("## Annam — food & water");
   L.push("Target "+FD.target+" kcal · consumed "+s.consumed+" · remaining "+(FD.target-s.consumed));
   L.push("Protein: "+s.protein+" / "+FD.proteinTarget+" g · water "+s.water+" glass"+(s.water===1?"":"es"));
+  var bd=FD.days[k]||{};var burned=bd.burned||0;var deficit=(FD.bmr+burned)-s.consumed;
+  L.push("Movement: BMR "+FD.bmr+" + burned "+burned+" − consumed "+s.consumed+" = "+(deficit>0?deficit+" kcal deficit":(-deficit)+" kcal surplus"));
+  if(bd.workouts&&bd.workouts.length)bd.workouts.forEach(function(w){L.push("- "+(w.type||"Workout")+(w.duration?", "+w.duration+" min":"")+(w.kcal?", "+w.kcal+" kcal":"")+(w.hr?", "+w.hr+" bpm":""))});
   if(fdd&&fdd.items&&fdd.items.length)fdd.items.forEach(function(i){L.push("- "+i.name+" — "+(+i.cal||0)+" kcal"+((+i.pro||0)?", "+(+i.pro)+"g protein":""))});
   var brews=CF.brews.filter(function(b){return b.date===k});
   if(brews.length){
@@ -1220,6 +1224,33 @@ function renderFood(){
     +'<span class="mono xs" style="color:'+(s.protein>=FD.proteinTarget?'#8FBC8F':'#8AA38E')+'"><span id="fd_pcons">'+s.protein+'</span> / '
     +'<input data-dbind="fd-ptarget" type="number" inputmode="numeric" value="'+FD.proteinTarget+'" style="width:3.4rem;text-align:right;display:inline;color:#DFE9DA;font-family:inherit;font-size:inherit"> g</span></div>'
     +'<div class="bar" style="background:#2E4435;margin-top:.45rem"><div id="fd_pbar" style="width:'+ppct+'%;background:#8FBC8F"></div></div>';
+  // movement & deficit
+  var burned=d.burned||0;
+  var deficit=(FD.bmr+burned)-s.consumed;
+  h+='<div class="card sp6" style="margin-top:1.25rem">'
+    +'<div class="between"><div class="label">Movement & deficit</div>'
+    +'<span class="mono xs" style="color:'+(deficit>0?'#8FBC8F':'#C97B5D')+'">'
+    +(deficit>0?deficit+' kcal deficit':(-deficit)+' kcal surplus')+'</span></div>'
+    +'<div class="between"><span class="mono xs" style="color:#8AA38E">BMR / maintenance</span>'
+    +'<span class="mono xs"><input data-dbind="fd-bmr" type="number" inputmode="numeric" value="'+FD.bmr+'" style="width:4rem;text-align:right;display:inline;color:#DFE9DA;font-family:inherit;font-size:inherit"> kcal</span></div>'
+    +'<div class="between"><span class="mono xs" style="color:#8AA38E">Active burned (Health)</span>'
+    +'<span class="mono xs"><input data-dbind="fd-burned" type="number" inputmode="numeric" value="'+burned+'" style="width:4rem;text-align:right;display:inline;color:#DFE9DA;font-family:inherit;font-size:inherit"> kcal</span></div>'
+    +'<div class="between" style="border-top:1px solid #2E4435;padding-top:.4rem;margin-top:.2rem">'
+    +'<span class="mono xs" style="color:#56705C">(BMR + burned) − consumed</span>'
+    +'<span class="mono xs" style="color:'+(deficit>0?'#8FBC8F':'#C97B5D')+'">'+(FD.bmr+burned)+' − '+s.consumed+' = '+deficit+'</span></div>';
+  if((d.workouts||[]).length){
+    h+='<div class="sp4" style="padding-top:.3rem;border-top:1px solid #2E4435;margin-top:.2rem">';
+    d.workouts.forEach(function(w){
+      h+='<div style="display:flex;align-items:center;gap:.6rem">'
+        +'<span class="sm" style="flex:1">'+esc(w.type||"Workout")+'</span>'
+        +'<span class="mono xs" style="color:#8AA38E">'
+        +[w.duration?w.duration+" min":"",w.kcal?w.kcal+" kcal":"",w.hr?w.hr+" bpm":""].filter(Boolean).join(" · ")
+        +'</span>'
+        +'<button class="x" data-dact="wk-del" data-id="'+w.id+'">✕</button></div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
   // add food
   h+='<div class="card sp8" style="margin-top:1.25rem">'
     +'<div class="label">Add food / drink</div>'
@@ -1317,6 +1348,12 @@ drawer.addEventListener("click",function(e){
     dd.items=dd.items.filter(function(x){return x.id!==ds.id});
     saveAux(LSF,FD);renderDrawer();
   }
+  else if(a==="wk-del"){
+    var dwk=fdDay(dKey(new Date()));
+    var rm=dwk.workouts.find(function(x){return x.id===ds.id});
+    if(rm){dwk.burned=Math.max(0,(dwk.burned||0)-(+rm.kcal||0));dwk.workouts=dwk.workouts.filter(function(x){return x.id!==ds.id})}
+    saveAux(LSF,FD);renderDrawer();
+  }
   else if(a==="fd-wplus"){fdDay(dKey(new Date())).water++;saveAux(LSF,FD);renderDrawer()}
   else if(a==="fd-wminus"){var dw=fdDay(dKey(new Date()));dw.water=Math.max(0,dw.water-1);saveAux(LSF,FD);renderDrawer()}
   else if(a==="fd-wset"){
@@ -1339,6 +1376,18 @@ drawer.addEventListener("input",function(e){
   if(t.dataset.dbind==="fd-ptarget"){
     var pv=parseInt(t.value,10);
     FD.proteinTarget=isNaN(pv)||pv<0?0:pv;
+    saveAux(LSF,FD);
+    updateFoodSummary();
+  }
+  if(t.dataset.dbind==="fd-bmr"){
+    var bv=parseInt(t.value,10);
+    FD.bmr=isNaN(bv)||bv<0?0:bv;
+    saveAux(LSF,FD);
+    updateFoodSummary();
+  }
+  if(t.dataset.dbind==="fd-burned"){
+    var rv=parseInt(t.value,10);
+    fdDay(dKey(new Date())).burned=isNaN(rv)||rv<0?0:rv;
     saveAux(LSF,FD);
     updateFoodSummary();
   }
@@ -1385,6 +1434,42 @@ document.getElementById("sync").addEventListener("click",function(){
     var names=["ledger","coffee","food"];
     var ref=function(uid,st){return fsM.doc(db,"users",uid,"stores",st)};
     var pushTimers={},unsubs=[];
+
+    function drainInbox(uid){
+      // Shortcut PATCHes users/{uid}/inbox/{YYYY-MM-DD}: {date, burned, workouts?}
+      // We read today's and yesterday's docs directly. Idempotent merge; we don't delete
+      // (a fixed-ID doc just reflects the latest Health read for that date).
+      var now=new Date();
+      var keys=[dKey(now),dKey(addDays(now,-1))];
+      var touched=false,pending=keys.length;
+      function done(){if(--pending>0)return;if(touched){
+        FD._updatedAt=new Date().toISOString();
+        try{localStorage.setItem(LSF,JSON.stringify(FD))}catch(e){}
+        push("food");
+        render();
+        if(UI.drawer==="food")renderDrawer();
+      }}
+      keys.forEach(function(k){
+        fsM.getDoc(fsM.doc(db,"users",uid,"inbox",k)).then(function(snap){
+          if(snap.exists()){
+            var data=snap.data()||{};
+            if(data.date===k||/^\d{4}-\d{2}-\d{2}$/.test(k)){
+              var day=fdDay(k);
+              if(data.burned!=null&&!isNaN(+data.burned))day.burned=+data.burned;
+              // empty/absent array = "no workout data supplied", not "clear"
+              if(Array.isArray(data.workouts)&&data.workouts.length){
+                day.workouts=data.workouts.map(function(w){
+                  return{id:uid2(),type:(w&&w.type)||"Workout",duration:+(w&&w.duration)||0,kcal:+(w&&w.kcal)||0,hr:+(w&&w.hr)||0};
+                });
+              }
+              touched=true;
+            }
+          }
+          done();
+        }).catch(function(){done()});
+      });
+    }
+    function uid2(){return Math.random().toString(36).slice(2,9)}
 
     function push(st){
       if(!SYNC.user)return;
@@ -1436,9 +1521,12 @@ document.getElementById("sync").addEventListener("click",function(){
     authM.onAuthStateChanged(auth,function(u){
       unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
       SYNC.user=u?{uid:u.uid,email:u.email}:null;
-      if(u){setSyncStatus("syncing");listen(u.uid)}
+      if(u){setSyncStatus("syncing");listen(u.uid);drainInbox(u.uid)}
       else setSyncStatus("signedout");
       if(UI.tab==="compass")render();
+    });
+    document.addEventListener("visibilitychange",function(){
+      if(!document.hidden&&SYNC.user)drainInbox(SYNC.user.uid);
     });
 
     window.addEventListener("online",function(){if(SYNC.user){setSyncStatus("syncing");names.forEach(push)}});
